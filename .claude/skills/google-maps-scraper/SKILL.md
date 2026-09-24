@@ -77,7 +77,10 @@ order_online, menu, owner, complete_address, about, user_reviews, user_reviews_e
 The raw CSV has 34 columns and most are noise. **By default, return ONLY these lead fields** — the data you
 actually use to contact and qualify a lead — and **drop everything else**:
 
-> `title` (name), `phone`, `emails`, `website`, `category`, `address`, `review_rating`, `review_count`
+> `nome`, `telefone`, `emails`, `website`, `categoria`, `endereco`, `nota`, `avaliacoes`
+
+(Mapped from the scraper's `title`/`phone`/`category`/`address`/`review_rating`/`review_count`.)
+Rows are **sorted by nome**. Address drops the redundant `"Name - "` prefix. Nota is one decimal.
 
 **DROP by default** (do not show these unless the user explicitly asks): `latitude`/`longitude` (no use for
 outreach), `link`, `plus_code`, `cid`, `data_id`, `place_id`, `open_hours`, `popular_times`,
@@ -86,9 +89,9 @@ outreach), `link`, `plus_code`, `cid`, `data_id`, `place_id`, `open_hours`, `pop
 `user_reviews`, `user_reviews_extended`.
 
 `scripts/scrape.py` already returns exactly this lead set (use `--full` to keep all columns, or
-`--fields "a,b,c"` to customize) and **saves a CSV file by default** (`results-<id>.csv`; pass `--json` for
-JSON). If you call the API directly, **strip to the lead fields yourself** before presenting — never dump the
-full 34-column row at the user.
+`--fields "a,b,c"` to customize with raw English column names) and **saves a CSV file by default**
+(`results-<id>.csv`; pass `--json` for JSON). If you call the API directly, **strip to the lead fields
+yourself** before presenting — never dump the full 34-column row at the user.
 
 ### Social profiles — ALWAYS ASK the user (Instagram / Facebook / LinkedIn)
 Google Maps has no social links, so this is an enrichment: visit each business's `website` and regex out its

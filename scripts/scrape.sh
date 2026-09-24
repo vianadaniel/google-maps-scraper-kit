@@ -47,21 +47,50 @@ echo "▶ Downloading…"
 curl -s "${AUTH[@]}" "$BASE/api/v1/jobs/$ID/download" -o "$RAW"
 
 # Trim the raw 34-column dump down to money-useful LEAD fields only (drops geo coords, IDs, hours, images…).
+# Columns: nome, telefone first — sorted alphabetically by name.
 if command -v python3 >/dev/null 2>&1; then
   python3 - "$RAW" "$OUT" <<'PY'
 import csv, sys
-LEAD = ["title", "phone", "emails", "website", "category", "address", "review_rating", "review_count"]
-with open(sys.argv[1], newline='') as f:
-    rows = list(csv.DictReader(f))
-with open(sys.argv[2], "w", newline='') as f:
-    w = csv.DictWriter(f, fieldnames=LEAD); w.writeheader()
-    for r in rows:
-        w.writerow({k: r.get(k, "") for k in LEAD})
+
+def clean_address(title, address):
+    address = (address or "").strip()
+    title = (title or "").strip()
+    if title and address.startswith(title + " - "):
+        return address[len(title) + 3:]
+    return address
+
+def fmt_nota(val):
+    try:
+        return f"{float(val):.1f}" if val not in (None, "") else ""
+    except (TypeError, ValueError):
+        return val or ""
+
+LEAD = ["nome", "telefone", "emails", "website", "categoria", "endereco", "nota", "avaliacoes"]
+with open(sys.argv[1], newline="") as f:
+    raw = list(csv.DictReader(f))
+rows = []
+for r in raw:
+    title = r.get("title", "")
+    rows.append({
+        "nome": title,
+        "telefone": r.get("phone", ""),
+        "emails": r.get("emails", ""),
+        "website": r.get("website", ""),
+        "categoria": r.get("category", ""),
+        "endereco": clean_address(title, r.get("address", "")),
+        "nota": fmt_nota(r.get("review_rating", "")),
+        "avaliacoes": r.get("review_count", ""),
+    })
+rows.sort(key=lambda x: (x.get("nome") or "").lower())
+with open(sys.argv[2], "w", newline="") as f:
+    w = csv.DictWriter(f, fieldnames=LEAD)
+    w.writeheader()
+    w.writerows(rows)
 print(f"✓ Done — {len(rows)} leads saved to {sys.argv[2]}")
-print("  (name, phone, email, website, category, address, rating, reviews)\n")
-print("Preview (name | phone | email | website):")
+print("  (nome, telefone, emails, website, categoria, endereco, nota, avaliacoes)\n")
+print("Preview (nome | telefone | emails | website):")
 for r in rows[:6]:
-    print(f"  • {r.get('title','')} | {r.get('phone','')} | {r.get('emails','')} | {r.get('website','')}")
+    print(f"  • {r.get('nome','')} | {r.get('telefone','')} | {r.get('emails','')} | {r.get('website','')}")
 PY
   rm -f "$RAW"
 else
